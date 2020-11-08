@@ -4,11 +4,10 @@ CC = $(CROSS_COMPILE)g++
 LD = $(CROSS_COMPILE)g++
 AR = $(CROSS_COMPILE)ar
 
-VPATH = ../include
 OBJECTS = klogging.o
 SHARED_LIB_TARGET = libklogging.so
 STATIC_LIB_TARGET = libklogging.a
-CFLAGS += -I$(VPATH) -fPIC -O2 -DVERSION=\"$(VERSION)\"
+CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
 
 
 .PHONY: all
