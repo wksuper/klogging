@@ -127,8 +127,8 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	static pthread_mutex_t s_mutex_for_stdout = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_mutex_t s_mutex_for_stderr = PTHREAD_MUTEX_INITIALIZER;
 
-	char timestr[20];
-	char linestr[10];
+	char timestr[32];
+	char linestr[16];
 	struct timeval tv;
 
 	if (m_options & KLOGGING_PRINT_FILE_NAME) {
@@ -152,7 +152,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	} else {
 		gettimeofday(&tv, NULL);
 		strftime(timestr, sizeof(timestr), "%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-		sprintf(timestr + 14, ".%03ld ", tv.tv_usec / 1000);
+		sprintf(timestr + 14, ".%06ld ", tv.tv_usec);
 	}
 
 	if (m_file) {
