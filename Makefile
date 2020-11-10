@@ -17,11 +17,13 @@ HEADER = klogging.h
 .PHONY: all
 all:
 	$(MAKE) -C src
+	$(MAKE) -C example
 
 
 .PHONY: clean
 clean:
 	$(MAKE) -C src clean
+	$(MAKE) -C example clean
 
 
 .PHONY: install
