@@ -24,6 +24,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
+#include <stdlib.h>
 // #include <cutils/log.h>
 
 const char *_cpp_klogging_version()
@@ -40,6 +42,49 @@ KLogging::~KLogging()
 {
 	if (m_file)
 		fclose(m_file);
+}
+
+int KLogging::Set(int argc, char *argv[])
+{
+	for (int i = 0; i < argc; ++i) {
+		const char *arg = argv[i];
+		const size_t arg_len = strlen(arg);
+		const char *s;
+		size_t s_len;
+
+		s = "KLOG_SET_OPTIONS=";
+		s_len = strlen(s);
+		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
+			KLoggingOptions options = 0;
+
+			if ((arg_len > s_len + 2)
+			 && (arg[s_len] == '0')
+			 && (arg[s_len+1] == 'x' || arg[s_len+1] == 'X')) {   /* Hex or not */
+				options |= strtol(arg + s_len + 2, NULL, 16);
+			} else if ((arg_len > s_len + 1) && (arg[s_len] == '0')) { /* Oct or not */
+				options |= strtol(arg + s_len + 1, NULL, 8);
+			} else { /* regard it as Dec */
+				options |= strtol(arg + s_len, NULL, 10);
+			}
+
+			KLOG_SET_OPTIONS(options);
+		}
+
+		s = "KLOG_SET_LEVEL=";
+		s_len = strlen(s);
+		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
+			enum KLoggingLevel level = (enum KLoggingLevel)atoi(arg + s_len);
+			if (level <= KLOGGING_LEVEL_VERBOSE) {
+				KLOG_SET_LEVEL(level);
+			}
+		}
+
+		s = "KLOG_SET_FILE=";
+		s_len = strlen(s);
+		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
+			KLOG_SET_FILE(arg + s_len);
+		}
+	}
 }
 
 int KLogging::SetFile(const char *filename)
@@ -196,6 +241,11 @@ KLogging _klogging;
 extern "C" const char *_klogging_version()
 {
 	return VERSION;
+}
+
+extern "C" int _klogging_set(int argc, char *argv[])
+{
+	return _klogging.Set(argc, argv);
 }
 
 extern "C" int _klogging_set_file(const char *filename)

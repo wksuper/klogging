@@ -33,19 +33,30 @@ typedef uint16_t KLoggingOptions;
 static const KLoggingOptions KLOGGING_TO_STDOUT = (0x1 << 0);
 static const KLoggingOptions KLOGGING_TO_STDERR = (0x1 << 1);
 static const KLoggingOptions KLOGGING_TO_LOGCAT = (0x1 << 2);
-static const KLoggingOptions KLOGGING_PRINT_FILE_NAME = (0x1 << 11);
-static const KLoggingOptions KLOGGING_PRINT_LINE_NUM = (0x1 << 12);
-static const KLoggingOptions KLOGGING_PRINT_FUNCTION_NAME = (0x1 << 13);
-static const KLoggingOptions KLOGGING_FLUSH_IMMEDIATELY = (0x1 << 14);
-static const KLoggingOptions KLOGGING_NO_TIMESTAMP = (0x1 << 15);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 3);
+
+// static const KLoggingOptions _RESERVED_ = (0x1 << 4);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 5);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 6);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 7);
+
+static const KLoggingOptions KLOGGING_PRINT_FILE_NAME = (0x1 << 8);
+static const KLoggingOptions KLOGGING_PRINT_LINE_NUM = (0x1 << 9);
+static const KLoggingOptions KLOGGING_PRINT_FUNCTION_NAME = (0x1 << 10);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 11);
+
+static const KLoggingOptions KLOGGING_FLUSH_IMMEDIATELY = (0x1 << 12);
+static const KLoggingOptions KLOGGING_NO_TIMESTAMP = (0x1 << 13);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 14);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 15);
 
 enum KLoggingLevel {
 	KLOGGING_LEVEL_OFF = 0,
-	KLOGGING_LEVEL_ERROR,
-	KLOGGING_LEVEL_WARNING,
-	KLOGGING_LEVEL_INFO,
-	KLOGGING_LEVEL_DEBUG,
-	KLOGGING_LEVEL_VERBOSE
+	KLOGGING_LEVEL_ERROR = 1,
+	KLOGGING_LEVEL_WARNING = 2,
+	KLOGGING_LEVEL_INFO = 3,
+	KLOGGING_LEVEL_DEBUG = 4,
+	KLOGGING_LEVEL_VERBOSE = 5
 };
 
 #ifdef __cplusplus
@@ -56,11 +67,13 @@ const char *_cpp_klogging_version();
 class KLogging {
 public:
 	KLogging();
-	int SetFile(const char *filename);
 
+	int Set(int argc, char *argv[]);
+	int SetFile(const char *filename);
 	void SetOptions(KLoggingOptions options) { m_options = options; }
 	KLoggingOptions GetOptions() const { return m_options; }
 	void SetLevel(KLoggingLevel level) { m_level = level; }
+
 	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
 	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
 	inline bool CanPrintInfo() const { return m_level >= KLOGGING_LEVEL_INFO; }
@@ -90,6 +103,7 @@ private:
 
 extern KLogging _klogging;
 
+static inline int KLOG_SET(int argc, char *argv[]) { return _klogging.Set(argc, argv); }
 static inline int KLOG_SET_FILE(const char *filename) { return _klogging.SetFile(filename); }
 static inline void KLOG_SET_OPTIONS(KLoggingOptions options) { _klogging.SetOptions(options); }
 static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging.GetOptions(); }
@@ -106,6 +120,7 @@ static inline void KLOG_SET_LEVEL(enum KLoggingLevel level) { _klogging.SetLevel
 
 /* C APIs */
 const char *_klogging_version();
+int _klogging_set(int argc, char *argv[]);
 int _klogging_set_file(const char *filename);
 void _klogging_set_options(KLoggingOptions options);
 KLoggingOptions _klogging_get_options();
@@ -117,6 +132,7 @@ void _klogging_i(const char *file, int line, const char *function, const char *l
 void _klogging_d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
 void _klogging_v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
 
+static inline int KLOG_SET(int argc, char *argv[]) { return _klogging_set(argc, argv); }
 static inline int KLOG_SET_FILE(const char *filename) { return _klogging_set_file(filename); }
 static inline void KLOG_SET_OPTIONS(KLoggingOptions options) { _klogging_set_options(options); }
 static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging_get_options(); }
