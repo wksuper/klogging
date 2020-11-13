@@ -46,6 +46,8 @@ KLogging::~KLogging()
 
 int KLogging::Set(int argc, char *argv[])
 {
+	int ret = 0;
+
 	for (int i = 0; i < argc; ++i) {
 		const char *arg = argv[i];
 		const size_t arg_len = strlen(arg);
@@ -82,9 +84,13 @@ int KLogging::Set(int argc, char *argv[])
 		s = "KLOG_SET_FILE=";
 		s_len = strlen(s);
 		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
-			KLOG_SET_FILE(arg + s_len);
+			int rc = KLOG_SET_FILE(arg + s_len);
+			if (rc != 0)
+				ret = rc;
 		}
 	}
+
+	return ret;
 }
 
 int KLogging::SetFile(const char *filename)
