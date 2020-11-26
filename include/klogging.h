@@ -40,9 +40,9 @@ static const KLoggingOptions KLOGGING_TO_LOGCAT = (0x1 << 2);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 6);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 7);
 
-static const KLoggingOptions KLOGGING_PRINT_FILE_NAME = (0x1 << 8);
-static const KLoggingOptions KLOGGING_PRINT_LINE_NUM = (0x1 << 9);
-static const KLoggingOptions KLOGGING_PRINT_FUNCTION_NAME = (0x1 << 10);
+static const KLoggingOptions KLOGGING_PRINT_SOURCEFILE_INFO = (0x1 << 8);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 9);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 10);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 11);
 
 static const KLoggingOptions KLOGGING_FLUSH_IMMEDIATELY = (0x1 << 12);
@@ -73,6 +73,7 @@ public:
 	void SetOptions(KLoggingOptions options) { m_options = options; }
 	KLoggingOptions GetOptions() const { return m_options; }
 	void SetLevel(KLoggingLevel level) { m_level = level; }
+	int SetLineEnd(const char *end);
 
 	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
 	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
@@ -99,6 +100,7 @@ private:
 	FILE *m_file;
 	KLoggingOptions m_options;
 	KLoggingLevel m_level;
+	char m_lineEnd[32];
 };
 
 extern KLogging _klogging;
@@ -108,6 +110,7 @@ static inline int KLOG_SET_FILE(const char *filename) { return _klogging.SetFile
 static inline void KLOG_SET_OPTIONS(KLoggingOptions options) { _klogging.SetOptions(options); }
 static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging.GetOptions(); }
 static inline void KLOG_SET_LEVEL(enum KLoggingLevel level) { _klogging.SetLevel(level); }
+static inline int KLOG_SET_LINEEND(const char *end) { return _klogging.SetLineEnd(end); }
 #define KVERSION()        _cpp_klogging_version()
 #define KCONSOLE(args...) _klogging.c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
 #define KLOGE(args...)    _klogging.e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
@@ -125,6 +128,7 @@ int _klogging_set_file(const char *filename);
 void _klogging_set_options(KLoggingOptions options);
 KLoggingOptions _klogging_get_options();
 void _klogging_set_level(enum KLoggingLevel level);
+int _klogging_set_lineend(const char *end);
 void _klogging_c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
 void _klogging_e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
 void _klogging_w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
@@ -137,6 +141,7 @@ static inline int KLOG_SET_FILE(const char *filename) { return _klogging_set_fil
 static inline void KLOG_SET_OPTIONS(KLoggingOptions options) { _klogging_set_options(options); }
 static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging_get_options(); }
 static inline void KLOG_SET_LEVEL(enum KLoggingLevel level) { _klogging_set_level(level); }
+static inline int KLOG_SET_LINEEND(const char *end) { return _klogging_set_lineend(end); }
 #define KVERSION()        _klogging_version()
 #define KCONSOLE(args...) _klogging_c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
 #define KLOGE(args...)    _klogging_e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)

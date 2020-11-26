@@ -4,12 +4,14 @@ int main(int argc, char *argv[])
 {
         KLOG_SET(argc, argv);
 
-        KCONSOLE("I'm KCONSOLE\n");
-        KLOGE("I'm KLOGE\n");
-        KLOGW("I'm KLOGW\n");
-        KLOGI("I'm KLOGI\n");
-        KLOGD("I'm KLOGD\n");
-        KLOGV("I'm KLOGV\n");
+        printf("klogging version: %s\n", KVERSION());
+
+        KCONSOLE("I'm KCONSOLE");
+        KLOGE("I'm KLOGE");
+        KLOGW("I'm KLOGW");
+        KLOGI("I'm KLOGI");
+        KLOGD("I'm KLOGD");
+        KLOGV("I'm KLOGV");
 
         return 0;
 }

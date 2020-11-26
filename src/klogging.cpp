@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 // #include <cutils/log.h>
 
@@ -38,8 +39,12 @@ const char *_cpp_klogging_version()
 }
 
 KLogging::KLogging()
-	: m_file(NULL), m_options(0), m_level(KLOGGING_LEVEL_OFF)
+	: m_file(NULL)
+	, m_options(KLOGGING_PRINT_SOURCEFILE_INFO)
+	, m_level(KLOGGING_LEVEL_OFF)
+	, m_lineEnd("\n")
 {
+
 }
 
 KLogging::~KLogging()
@@ -55,45 +60,80 @@ int KLogging::Set(int argc, char *argv[])
 	for (int i = 0; i < argc; ++i) {
 		const char *arg = argv[i];
 		const size_t arg_len = strlen(arg);
-		const char *s;
-		size_t s_len;
+		const char *key;
+		size_t key_len;
 
-		s = "KLOG_SET_OPTIONS=";
-		s_len = strlen(s);
-		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
+		key = "KLOG_SET_OPTIONS=";
+		key_len = strlen(key);
+		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
 			KLoggingOptions options = 0;
 
-			if ((arg_len > s_len + 2)
-			 && (arg[s_len] == '0')
-			 && (arg[s_len+1] == 'x' || arg[s_len+1] == 'X')) {   /* Hex or not */
-				options |= strtol(arg + s_len + 2, NULL, 16);
-			} else if ((arg_len > s_len + 1) && (arg[s_len] == '0')) { /* Oct or not */
-				options |= strtol(arg + s_len + 1, NULL, 8);
+			if ((arg_len > key_len + 2)
+			 && (arg[key_len] == '0')
+			 && (arg[key_len+1] == 'x' || arg[key_len+1] == 'X')) {   /* Hex or not */
+				options |= strtol(arg + key_len + 2, NULL, 16);
+			} else if ((arg_len > key_len + 1) && (arg[key_len] == '0')) { /* Oct or not */
+				options |= strtol(arg + key_len + 1, NULL, 8);
 			} else { /* regard it as Dec */
-				options |= strtol(arg + s_len, NULL, 10);
+				options |= strtol(arg + key_len, NULL, 10);
 			}
 
 			KLOG_SET_OPTIONS(options);
 		}
 
-		s = "KLOG_SET_LEVEL=";
-		s_len = strlen(s);
-		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
-			enum KLoggingLevel level = (enum KLoggingLevel)atoi(arg + s_len);
+		key = "KLOG_SET_LEVEL=";
+		key_len = strlen(key);
+		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
+			enum KLoggingLevel level = (enum KLoggingLevel)atoi(arg + key_len);
 			if (level <= KLOGGING_LEVEL_VERBOSE) {
 				KLOG_SET_LEVEL(level);
 			}
 		}
 
-		s = "KLOG_SET_FILE=";
-		s_len = strlen(s);
-		if (arg_len > s_len && strncmp(arg, s, s_len) == 0) {
-			int rc = KLOG_SET_FILE(arg + s_len);
+		key = "KLOG_SET_FILE=";
+		key_len = strlen(key);
+		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
+			int rc = KLOG_SET_FILE(arg + key_len);
+			if (rc != 0)
+				ret = rc;
+		}
+
+		key = "KLOG_SET_LINEEND=";
+		key_len = strlen(key);
+		if ((arg_len >= key_len) && strncmp(arg, key, key_len) == 0) {
+			std::string tmp;
+			const char *val = arg + key_len;
+			size_t val_len = arg_len - key_len;
+			for (size_t i = 0; i < val_len;) {
+				if (val[i] == '\\' && (i + 1 < val_len)) {
+					switch (val[i+1]) {
+					case 'n':
+						tmp.push_back('\n');
+						i += 2;
+						break;
+					case 'r':
+						tmp.push_back('\r');
+						i += 2;
+						break;
+					case 't':
+						tmp.push_back('\t');
+						i += 2;
+						break;
+					default:
+						tmp.push_back(val[i]);
+						++i;
+						break;
+					}
+				} else {
+					tmp.push_back(val[i]);
+					++i;
+				}
+			}
+			int rc = KLOG_SET_LINEEND(tmp.c_str());
 			if (rc != 0)
 				ret = rc;
 		}
 	}
-
 	return ret;
 }
 
@@ -108,6 +148,21 @@ int KLogging::SetFile(const char *filename)
 		m_file = NULL;
 		return 0;
 	}
+}
+
+int KLogging::SetLineEnd(const char *end)
+{
+	size_t len;
+
+	if (!end)
+		return -1;
+
+	len = strlen(end);
+	if (len + 1 > sizeof(m_lineEnd))
+		return -1;
+
+	strncpy(m_lineEnd, end, sizeof(m_lineEnd));
+	return 0;
 }
 
 void KLogging::c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
@@ -181,23 +236,6 @@ void KLogging::v(const char *file, int line, const char *function, const char *l
 void KLogging::Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
 {
 	char timestr[32];
-	char linestr[16];
-
-	if (m_options & KLOGGING_PRINT_FILE_NAME) {
-	} else {
-		file = "";
-	}
-
-	if (m_options & KLOGGING_PRINT_LINE_NUM) {
-		sprintf(linestr, "%d", line);
-	} else {
-		linestr[0] = '\0';
-	}
-
-	if (m_options & KLOGGING_PRINT_FUNCTION_NAME) {
-	} else {
-		function = "";
-	}
 
 	if (m_options & KLOGGING_NO_TIMESTAMP) {
 		timestr[0] = '\0';
@@ -206,13 +244,17 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 		gettimeofday(&tv, NULL);
 		strftime(timestr, sizeof(timestr), "%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-		sprintf(timestr + 14, ".%06ld ", tv.tv_usec);
+		sprintf(timestr + 14, ".%06ld", tv.tv_usec);
 	}
 
 	if (m_file) {
 		pthread_mutex_lock(&s_mutex_for_file);
-		fprintf(m_file, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
+		fprintf(m_file, "[%s %c] ", timestr, type);
 		vfprintf(m_file, format, args);
+		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
+			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
+		else
+			fprintf(m_file, "%s", m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(m_file);
 		pthread_mutex_unlock(&s_mutex_for_file);
@@ -220,16 +262,25 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_options & KLOGGING_TO_STDOUT) {
 		pthread_mutex_lock(&s_mutex_for_stdout);
-		fprintf(stdout, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
+		fprintf(stdout, "[%s %c] ", timestr, type);
 		vfprintf(stdout, format, args);
+		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
+			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
+		else
+			fprintf(stdout, "%s", m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stdout);
 		pthread_mutex_unlock(&s_mutex_for_stdout);
 	}
+
 	if (m_options & KLOGGING_TO_STDERR) {
 		pthread_mutex_lock(&s_mutex_for_stderr);
-		fprintf(stderr, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
+		fprintf(stderr, "[%s %c] ", timestr, type);
 		vfprintf(stderr, format, args);
+		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
+			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
+		else
+			fprintf(stderr, "%s", m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stderr);
 		pthread_mutex_unlock(&s_mutex_for_stderr);
@@ -272,6 +323,11 @@ extern "C" KLoggingOptions _klogging_get_options()
 extern "C" void _klogging_set_level(enum KLoggingLevel level)
 {
 	_klogging.SetLevel(level);
+}
+
+extern "C" int _klogging_set_lineend(const char *end)
+{
+	return _klogging.SetLineEnd(end);
 }
 
 extern "C" void _klogging_c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
