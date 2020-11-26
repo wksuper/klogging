@@ -28,6 +28,10 @@
 #include <stdlib.h>
 // #include <cutils/log.h>
 
+static pthread_mutex_t s_mutex_for_file = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t s_mutex_for_stdout = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t s_mutex_for_stderr = PTHREAD_MUTEX_INITIALIZER;
+
 const char *_cpp_klogging_version()
 {
 	return VERSION;
@@ -113,8 +117,10 @@ void KLogging::c(const char *file, int line, const char *function, const char *l
 
 	if (!IsToConsole()) {
 		// If log is not being printed to console, print it here for end user
+		pthread_mutex_lock(&s_mutex_for_stdout);
 		vfprintf(stdout, format, args);
-		fflush(stdout);
+		fflush(stdout); // update the result for end user
+		pthread_mutex_unlock(&s_mutex_for_stdout);
 	} else {
 		// If log is being printed to console, just do nothing here
 	}
@@ -174,13 +180,8 @@ void KLogging::v(const char *file, int line, const char *function, const char *l
 
 void KLogging::Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
 {
-	static pthread_mutex_t s_mutex_for_file = PTHREAD_MUTEX_INITIALIZER;
-	static pthread_mutex_t s_mutex_for_stdout = PTHREAD_MUTEX_INITIALIZER;
-	static pthread_mutex_t s_mutex_for_stderr = PTHREAD_MUTEX_INITIALIZER;
-
 	char timestr[32];
 	char linestr[16];
-	struct timeval tv;
 
 	if (m_options & KLOGGING_PRINT_FILE_NAME) {
 	} else {
@@ -201,6 +202,8 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	if (m_options & KLOGGING_NO_TIMESTAMP) {
 		timestr[0] = '\0';
 	} else {
+		struct timeval tv;
+
 		gettimeofday(&tv, NULL);
 		strftime(timestr, sizeof(timestr), "%m-%d %H:%M:%S", localtime(&tv.tv_sec));
 		sprintf(timestr + 14, ".%06ld ", tv.tv_usec);
@@ -210,29 +213,26 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 		pthread_mutex_lock(&s_mutex_for_file);
 		fprintf(m_file, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
 		vfprintf(m_file, format, args);
-		pthread_mutex_unlock(&s_mutex_for_file);
-
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(m_file);
+		pthread_mutex_unlock(&s_mutex_for_file);
 	}
 
 	if (m_options & KLOGGING_TO_STDOUT) {
 		pthread_mutex_lock(&s_mutex_for_stdout);
 		fprintf(stdout, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
 		vfprintf(stdout, format, args);
-		pthread_mutex_unlock(&s_mutex_for_stdout);
-
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stdout);
+		pthread_mutex_unlock(&s_mutex_for_stdout);
 	}
 	if (m_options & KLOGGING_TO_STDERR) {
 		pthread_mutex_lock(&s_mutex_for_stderr);
 		fprintf(stderr, "[%s%c:%s:%s:%s] ", timestr, type, file, linestr, function);
 		vfprintf(stderr, format, args);
-		pthread_mutex_unlock(&s_mutex_for_stderr);
-
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stderr);
+		pthread_mutex_unlock(&s_mutex_for_stderr);
 	}
 
 	if (m_options & KLOGGING_TO_LOGCAT) {
@@ -280,8 +280,10 @@ extern "C" void _klogging_c(const char *file, int line, const char *function, co
 	va_start(args, format);
 	if (!_klogging.IsToConsole()) {
 		// If log is not being printed to console, print it here for end user
+		pthread_mutex_lock(&s_mutex_for_stdout);
 		vfprintf(stdout, format, args);
-		fflush(stdout);
+		fflush(stdout); // update the result for end user
+		pthread_mutex_unlock(&s_mutex_for_stdout);
 	} else {
 		// If log is being printed to console, just do nothing here
 	}
