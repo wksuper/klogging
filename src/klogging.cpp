@@ -179,6 +179,7 @@ void KLogging::c(const char *file, int line, const char *function, const char *l
 		// If log is not being printed to console, print it here for end user
 		pthread_mutex_lock(&s_mutex_for_stdout);
 		vfprintf(stdout, format, args);
+		fprintf(stdout, "%s", m_lineEnd);
 		fflush(stdout); // update the result for end user
 		pthread_mutex_unlock(&s_mutex_for_stdout);
 	} else {
