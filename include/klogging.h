@@ -75,27 +75,31 @@ public:
 	void SetLevel(KLoggingLevel level) { m_level = level; }
 	int SetLineEnd(const char *end);
 
-	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
-	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
-	inline bool CanPrintInfo() const { return m_level >= KLOGGING_LEVEL_INFO; }
-	inline bool CanPrintDebug() const { return m_level >= KLOGGING_LEVEL_DEBUG; }
-	inline bool CanPrintVerbose() const { return m_level >= KLOGGING_LEVEL_VERBOSE; }
-	inline bool IsToConsole() const { return m_options & (KLOGGING_TO_STDOUT | KLOGGING_TO_STDERR); }
-
 	void c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
+	void c(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 	void e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
+	void e(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 	void w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
+	void w(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 	void i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
+	void i(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 	void d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
+	void d(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 	void v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...);
-
-	void Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
+	void v(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 
 	~KLogging();
 
 private:
 	KLogging(const KLogging &);
 	KLogging &operator=(const KLogging &);
+	inline bool IsToConsole() const { return m_options & (KLOGGING_TO_STDOUT | KLOGGING_TO_STDERR); }
+	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
+	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
+	inline bool CanPrintInfo() const { return m_level >= KLOGGING_LEVEL_INFO; }
+	inline bool CanPrintDebug() const { return m_level >= KLOGGING_LEVEL_DEBUG; }
+	inline bool CanPrintVerbose() const { return m_level >= KLOGGING_LEVEL_VERBOSE; }
+	void Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args);
 
 	FILE *m_file;
 	KLoggingOptions m_options;

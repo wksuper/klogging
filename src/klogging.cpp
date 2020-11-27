@@ -169,7 +169,12 @@ void KLogging::c(const char *file, int line, const char *function, const char *l
 {
 	va_list args;
 	va_start(args, format);
+	c(file, line, function, log_tag, format, args);
+	va_end(args);
+}
 
+void KLogging::c(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (!IsToConsole()) {
 		// If log is not being printed to console, print it here for end user
 		pthread_mutex_lock(&s_mutex_for_stdout);
@@ -180,56 +185,80 @@ void KLogging::c(const char *file, int line, const char *function, const char *l
 		// If log is being printed to console, just do nothing here
 	}
 	Print('C', file, line, function, log_tag, format, args);
-	va_end(args);
 }
 
 void KLogging::e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
+	va_list args;
+	va_start(args, format);
+	e(file, line, function, log_tag, format, args);
+	va_end(args);
+}
+
+void KLogging::e(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (CanPrintError()) {
-		va_list args;
-		va_start(args, format);
 		Print('E', file, line, function, log_tag, format, args);
-		va_end(args);
 	}
 }
 
 void KLogging::w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
+	va_list args;
+	va_start(args, format);
+	w(file, line, function, log_tag, format, args);
+	va_end(args);
+}
+
+void KLogging::w(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (CanPrintWarning()) {
-		va_list args;
-		va_start(args, format);
 		Print('W', file, line, function, log_tag, format, args);
-		va_end(args);
 	}
 }
 
 void KLogging::i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
+	va_list args;
+	va_start(args, format);
+	i(file, line, function, log_tag, format, args);
+	va_end(args);
+}
+
+void KLogging::i(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (CanPrintInfo()) {
-		va_list args;
-		va_start(args, format);
 		Print('I', file, line, function, log_tag, format, args);
-		va_end(args);
 	}
 }
 
 void KLogging::d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
+	va_list args;
+	va_start(args, format);
+	d(file, line, function, log_tag, format, args);
+	va_end(args);
+}
+
+void KLogging::d(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (CanPrintDebug()) {
-		va_list args;
-		va_start(args, format);
 		Print('D', file, line, function, log_tag, format, args);
-		va_end(args);
 	}
 }
 
 void KLogging::v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
+	va_list args;
+	va_start(args, format);
+	v(file, line, function, log_tag, format, args);
+	va_end(args);
+}
+
+void KLogging::v(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+{
 	if (CanPrintVerbose()) {
-		va_list args;
-		va_start(args, format);
 		Print('V', file, line, function, log_tag, format, args);
-		va_end(args);
 	}
 }
 
@@ -297,7 +326,7 @@ KLogging _klogging;
 
 extern "C" const char *_klogging_version()
 {
-	return VERSION;
+	return _cpp_klogging_version();
 }
 
 extern "C" int _klogging_set(int argc, char *argv[])
@@ -334,65 +363,46 @@ extern "C" void _klogging_c(const char *file, int line, const char *function, co
 {
 	va_list args;
 	va_start(args, format);
-	if (!_klogging.IsToConsole()) {
-		// If log is not being printed to console, print it here for end user
-		pthread_mutex_lock(&s_mutex_for_stdout);
-		vfprintf(stdout, format, args);
-		fflush(stdout); // update the result for end user
-		pthread_mutex_unlock(&s_mutex_for_stdout);
-	} else {
-		// If log is being printed to console, just do nothing here
-	}
-	_klogging.Print('C', file, line, function, log_tag, format, args);
+	_klogging.c(file, line, function, log_tag, format, args);
 	va_end(args);
 }
 
 extern "C" void _klogging_e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
-	if (_klogging.CanPrintError()) {
-		va_list args;
-		va_start(args, format);
-		_klogging.Print('E', file, line, function, log_tag, format, args);
-		va_end(args);
-	}
+	va_list args;
+	va_start(args, format);
+	_klogging.e(file, line, function, log_tag, format, args);
+	va_end(args);
 }
 
 extern "C" void _klogging_w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
-	if (_klogging.CanPrintWarning()) {
-		va_list args;
-		va_start(args, format);
-		_klogging.Print('W', file, line, function, log_tag, format, args);
-		va_end(args);
-	}
+	va_list args;
+	va_start(args, format);
+	_klogging.w(file, line, function, log_tag, format, args);
+	va_end(args);
 }
 
 extern "C" void _klogging_i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
-	if (_klogging.CanPrintInfo()) {
-		va_list args;
-		va_start(args, format);
-		_klogging.Print('I', file, line, function, log_tag, format, args);
-		va_end(args);
-	}
+	va_list args;
+	va_start(args, format);
+	_klogging.i(file, line, function, log_tag, format, args);
+	va_end(args);
 }
 
 extern "C" void _klogging_d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
-	if (_klogging.CanPrintDebug()) {
-		va_list args;
-		va_start(args, format);
-		_klogging.Print('D', file, line, function, log_tag, format, args);
-		va_end(args);
-	}
+	va_list args;
+	va_start(args, format);
+	_klogging.d(file, line, function, log_tag, format, args);
+	va_end(args);
 }
 
 extern "C" void _klogging_v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
-	if (_klogging.CanPrintVerbose()) {
-		va_list args;
-		va_start(args, format);
-		_klogging.Print('V', file, line, function, log_tag, format, args);
-		va_end(args);
-	}
+	va_list args;
+	va_start(args, format);
+	_klogging.v(file, line, function, log_tag, format, args);
+	va_end(args);
 }
