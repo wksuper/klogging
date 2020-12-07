@@ -42,9 +42,8 @@ KLogging::KLogging()
 	: m_file(NULL)
 	, m_options(KLOGGING_PRINT_SOURCEFILE_INFO)
 	, m_level(KLOGGING_LEVEL_OFF)
-	, m_lineEnd("\n")
 {
-
+	strncpy(m_lineEnd, "\n", sizeof(m_lineEnd));
 }
 
 KLogging::~KLogging()
