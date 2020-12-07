@@ -6,6 +6,9 @@ PATCHLEVEL = 1
 export VERSION = $(MAINVERSION).$(SUBVERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL))
 
 # compile
+# export CROSS_COMPILE ?= arm-linux-androideabi-
+export LDFLAGS ?= -pie -fPIE
+
 export DESTDIR ?=
 export PREFIX ?= /usr/local
 export INCDIR ?= $(DESTDIR)$(PREFIX)/include
