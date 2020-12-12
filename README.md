@@ -1,13 +1,15 @@
 # klogging
 An easy-to-use C/C++ logging library
 
+Build and install
 ```
 $ make
 $ sudo make install
 $ sudo ldconfig
 ```
+Usage example:
 
-Usage example: myprog.c
+myprog.c
 ```
 #include <klogging.h>
 
@@ -25,7 +27,10 @@ int main(int argc, char *argv[])
         return 0;
 }
 ```
-
+Compile myprog with klogging library
+```
+$ gcc myprog.c -lklogging -o myprog
+```
 Run myprog
 ```
 $ ./myprog
