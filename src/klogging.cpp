@@ -40,7 +40,7 @@ const char *_cpp_klogging_version()
 
 KLogging::KLogging()
 	: m_file(NULL)
-	, m_options(KLOGGING_PRINT_SOURCEFILE_INFO)
+	, m_options(0)
 	, m_level(KLOGGING_LEVEL_OFF)
 {
 	strncpy(m_lineEnd, "\n", sizeof(m_lineEnd));
@@ -265,6 +265,8 @@ void KLogging::v(const char *file, int line, const char *function, const char *l
 void KLogging::Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
 {
 	char timestr[32];
+	char logtype[3];
+	char separator[3];
 
 	if (m_options & KLOGGING_NO_TIMESTAMP) {
 		timestr[0] = '\0';
@@ -273,17 +275,33 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 		gettimeofday(&tv, NULL);
 		strftime(timestr, sizeof(timestr), "%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-		sprintf(timestr + 14, ".%06ld", tv.tv_usec);
+		sprintf(timestr + 14, ".%06ld ", tv.tv_usec);
+	}
+
+	if (m_options & KLOGGING_NO_LOGTYPE) {
+		logtype[0] = '\0';
+	} else {
+		logtype[0] = type;
+		logtype[1] = ' ';
+		logtype[2] = '\0';
+	}
+
+	if ((m_options & KLOGGING_NO_TIMESTAMP) && (m_options & KLOGGING_NO_LOGTYPE)) {
+		separator[0] = '\0';
+	} else {
+		separator[0] = '|';
+		separator[1] = ' ';
+		separator[2] = '\0';
 	}
 
 	if (m_file) {
 		pthread_mutex_lock(&s_mutex_for_file);
-		fprintf(m_file, "[%s %c] ", timestr, type);
+		fprintf(m_file, "%s%s%s", timestr, logtype, separator);
 		vfprintf(m_file, format, args);
-		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
-			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		else
+		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(m_file, "%s", m_lineEnd);
+		else
+			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(m_file);
 		pthread_mutex_unlock(&s_mutex_for_file);
@@ -291,12 +309,12 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_options & KLOGGING_TO_STDOUT) {
 		pthread_mutex_lock(&s_mutex_for_stdout);
-		fprintf(stdout, "[%s %c] ", timestr, type);
+		fprintf(stdout, "%s%s%s", timestr, logtype, separator);
 		vfprintf(stdout, format, args);
-		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
-			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		else
+		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(stdout, "%s", m_lineEnd);
+		else
+			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stdout);
 		pthread_mutex_unlock(&s_mutex_for_stdout);
@@ -304,12 +322,12 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_options & KLOGGING_TO_STDERR) {
 		pthread_mutex_lock(&s_mutex_for_stderr);
-		fprintf(stderr, "[%s %c] ", timestr, type);
+		fprintf(stderr, "%s%s%s", timestr, logtype, separator);
 		vfprintf(stderr, format, args);
-		if (m_options & KLOGGING_PRINT_SOURCEFILE_INFO)
-			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		else
+		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(stderr, "%s", m_lineEnd);
+		else
+			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stderr);
 		pthread_mutex_unlock(&s_mutex_for_stderr);

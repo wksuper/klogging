@@ -38,16 +38,16 @@ static const KLoggingOptions KLOGGING_TO_LOGCAT = (0x1 << 2);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 4);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 5);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 6);
-// static const KLoggingOptions _RESERVED_ = (0x1 << 7);
+static const KLoggingOptions KLOGGING_FLUSH_IMMEDIATELY = (0x1 << 7);
 
-static const KLoggingOptions KLOGGING_PRINT_SOURCEFILE_INFO = (0x1 << 8);
+// static const KLoggingOptions _RESERVED_ = (0x1 << 8);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 9);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 10);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 11);
 
-static const KLoggingOptions KLOGGING_FLUSH_IMMEDIATELY = (0x1 << 12);
-static const KLoggingOptions KLOGGING_NO_TIMESTAMP = (0x1 << 13);
-// static const KLoggingOptions _RESERVED_ = (0x1 << 14);
+static const KLoggingOptions KLOGGING_NO_TIMESTAMP = (0x1 << 12);
+static const KLoggingOptions KLOGGING_NO_LOGTYPE = (0x1 << 13);
+static const KLoggingOptions KLOGGING_NO_SOURCEFILE = (0x1 << 14);
 // static const KLoggingOptions _RESERVED_ = (0x1 << 15);
 
 enum KLoggingLevel {
