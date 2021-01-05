@@ -27,7 +27,9 @@
 #include <string.h>
 #include <string>
 #include <stdlib.h>
-// #include <cutils/log.h>
+#ifdef ANDROID
+#include <cutils/log.h>
+#endif
 
 static pthread_mutex_t s_mutex_for_file = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t s_mutex_for_stdout = PTHREAD_MUTEX_INITIALIZER;
@@ -334,7 +336,9 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	}
 
 	if (m_options & KLOGGING_TO_LOGCAT) {
-		// __android_log_vprint(ANDROID_LOG_INFO, log_tag, format, args);
+#ifdef ANDROID
+		__android_log_vprint(ANDROID_LOG_INFO, log_tag, format, args);
+#endif
 	}
 }
 
