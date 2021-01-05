@@ -28,7 +28,7 @@
 #include <string>
 #include <stdlib.h>
 #ifdef ANDROID
-#include <cutils/log.h>
+#include <android/log.h>
 #endif
 
 static pthread_mutex_t s_mutex_for_file = PTHREAD_MUTEX_INITIALIZER;
