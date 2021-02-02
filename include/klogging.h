@@ -116,12 +116,12 @@ static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging.GetOptions()
 static inline void KLOG_SET_LEVEL(enum KLoggingLevel level) { _klogging.SetLevel(level); }
 static inline int KLOG_SET_LINEEND(const char *end) { return _klogging.SetLineEnd(end); }
 #define KVERSION()        _cpp_klogging_version()
-#define KCONSOLE(args...) _klogging.c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGE(args...)    _klogging.e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGW(args...)    _klogging.w(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGI(args...)    _klogging.i(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGD(args...)    _klogging.d(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGV(args...)    _klogging.v(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
+#define KCONSOLE(...) _klogging.c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGE(...)    _klogging.e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGW(...)    _klogging.w(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGI(...)    _klogging.i(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGD(...)    _klogging.d(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGV(...)    _klogging.v(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
 
 #else
 
@@ -147,12 +147,12 @@ static inline KLoggingOptions KLOG_GET_OPTIONS() { return _klogging_get_options(
 static inline void KLOG_SET_LEVEL(enum KLoggingLevel level) { _klogging_set_level(level); }
 static inline int KLOG_SET_LINEEND(const char *end) { return _klogging_set_lineend(end); }
 #define KVERSION()        _klogging_version()
-#define KCONSOLE(args...) _klogging_c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGE(args...)    _klogging_e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGW(args...)    _klogging_w(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGI(args...)    _klogging_i(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGD(args...)    _klogging_d(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
-#define KLOGV(args...)    _klogging_v(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, ##args)
+#define KCONSOLE(...)  _klogging_c(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGE(...)    _klogging_e(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGW(...)    _klogging_w(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGI(...)    _klogging_i(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGD(...)    _klogging_d(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
+#define KLOGV(...)    _klogging_v(__FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__)
 
 #endif
 

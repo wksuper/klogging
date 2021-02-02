@@ -19,8 +19,11 @@
  */
 
 #include <klogging.h>
-#include <time.h>
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <sys/time.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <mutex>
@@ -265,18 +268,26 @@ void KLogging::v(const char *file, int line, const char *function, const char *l
 
 void KLogging::Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
 {
-	char timestr[32];
+	char timestamp[32];
 	char logtype[3];
 	char separator[3];
 
 	if (m_options & KLOGGING_NO_TIMESTAMP) {
-		timestr[0] = '\0';
+		timestamp[0] = '\0';
 	} else {
-		struct timeval tv;
+#ifdef _WIN32
+		SYSTEMTIME now;
 
-		gettimeofday(&tv, NULL);
-		strftime(timestr, sizeof(timestr), "%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-		sprintf(timestr + 14, ".%06ld ", tv.tv_usec);
+		GetLocalTime(&now);
+		sprintf(timestamp, "%d-%d %d:%d:%d.%03d ",
+			now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond, now.wMilliseconds);
+#else
+		struct timeval now;
+
+		gettimeofday(&now, NULL);
+		strftime(timestamp, sizeof(timestamp), "%m-%d %H:%M:%S", localtime(&now.tv_sec));
+		sprintf(timestamp + 14, ".%06ld ", now.tv_usec);
+#endif
 	}
 
 	if (m_options & KLOGGING_NO_LOGTYPE) {
@@ -297,7 +308,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_file) {
 		std::lock_guard<std::mutex> lock(s_mutex_for_file);
-		fprintf(m_file, "%s%s%s", timestr, logtype, separator);
+		fprintf(m_file, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(m_file, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(m_file, "%s", m_lineEnd);
@@ -309,7 +320,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_options & KLOGGING_TO_STDOUT) {
 		std::lock_guard<std::mutex> lock(s_mutex_for_stdout);
-		fprintf(stdout, "%s%s%s", timestr, logtype, separator);
+		fprintf(stdout, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(stdout, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(stdout, "%s", m_lineEnd);
@@ -321,7 +332,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 
 	if (m_options & KLOGGING_TO_STDERR) {
 		std::lock_guard<std::mutex> lock(s_mutex_for_stderr);
-		fprintf(stderr, "%s%s%s", timestr, logtype, separator);
+		fprintf(stderr, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(stderr, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
 			fprintf(stderr, "%s", m_lineEnd);
