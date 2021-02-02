@@ -23,7 +23,7 @@
 #include <sys/time.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <pthread.h>
+#include <mutex>
 #include <string.h>
 #include <string>
 #include <stdlib.h>
@@ -31,9 +31,9 @@
 #include <android/log.h>
 #endif
 
-static pthread_mutex_t s_mutex_for_file = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t s_mutex_for_stdout = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t s_mutex_for_stderr = PTHREAD_MUTEX_INITIALIZER;
+static std::mutex s_mutex_for_file;
+static std::mutex s_mutex_for_stdout;
+static std::mutex s_mutex_for_stderr;
 
 const char *_cpp_klogging_version()
 {
@@ -178,11 +178,10 @@ void KLogging::c(const char *file, int line, const char *function, const char *l
 {
 	if (!IsToConsole()) {
 		// If log is not being printed to console, print it here for end user
-		pthread_mutex_lock(&s_mutex_for_stdout);
+		std::lock_guard<std::mutex> lock(s_mutex_for_stdout);
 		vfprintf(stdout, format, args);
 		fprintf(stdout, "%s", m_lineEnd);
 		fflush(stdout); // update the result for end user
-		pthread_mutex_unlock(&s_mutex_for_stdout);
 	} else {
 		// If log is being printed to console, just do nothing here
 	}
@@ -297,7 +296,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	}
 
 	if (m_file) {
-		pthread_mutex_lock(&s_mutex_for_file);
+		std::lock_guard<std::mutex> lock(s_mutex_for_file);
 		fprintf(m_file, "%s%s%s", timestr, logtype, separator);
 		vfprintf(m_file, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
@@ -306,11 +305,10 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(m_file);
-		pthread_mutex_unlock(&s_mutex_for_file);
 	}
 
 	if (m_options & KLOGGING_TO_STDOUT) {
-		pthread_mutex_lock(&s_mutex_for_stdout);
+		std::lock_guard<std::mutex> lock(s_mutex_for_stdout);
 		fprintf(stdout, "%s%s%s", timestr, logtype, separator);
 		vfprintf(stdout, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
@@ -319,11 +317,10 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stdout);
-		pthread_mutex_unlock(&s_mutex_for_stdout);
 	}
 
 	if (m_options & KLOGGING_TO_STDERR) {
-		pthread_mutex_lock(&s_mutex_for_stderr);
+		std::lock_guard<std::mutex> lock(s_mutex_for_stderr);
 		fprintf(stderr, "%s%s%s", timestr, logtype, separator);
 		vfprintf(stderr, format, args);
 		if (m_options & KLOGGING_NO_SOURCEFILE)
@@ -332,7 +329,6 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
 		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stderr);
-		pthread_mutex_unlock(&s_mutex_for_stderr);
 	}
 
 	if (m_options & KLOGGING_TO_LOGCAT) {
