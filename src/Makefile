@@ -14,7 +14,7 @@ CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
 all: $(SHARED_LIB_TARGET) $(STATIC_LIB_TARGET)
 
 $(SHARED_LIB_TARGET): $(OBJECTS)
-	$(LD) $(LDFLAGS) -shared $^ -o $@
+	$(LD) $(LDFLAGS) -shared -o $@ -llua $^
 
 $(STATIC_LIB_TARGET): $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^

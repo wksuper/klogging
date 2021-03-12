@@ -14,7 +14,7 @@ CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) ../src/libklogging.a
-	$(LD) $(LDFLAGS) $^ -lstdc++ -o $@
+	$(LD) -o $@ $(LDFLAGS) $^ -lstdc++ -llua -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

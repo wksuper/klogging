@@ -33,6 +33,7 @@
 #ifdef ANDROID
 #include <android/log.h>
 #endif
+#include <lua.hpp>
 
 static std::mutex s_mutex_for_file;
 static std::mutex s_mutex_for_stdout;
@@ -434,4 +435,135 @@ extern "C" void _klogging_v(const char *file, int line, const char *function, co
 	va_start(args, format);
 	_klogging.v(file, line, function, log_tag, format, args);
 	va_end(args);
+}
+
+
+/********** Lua Interfaces **********/
+
+static int l_KLOG_SET_LEVEL(lua_State* L)
+{
+	if (lua_isinteger(L, 1))
+		KLOG_SET_LEVEL((enum KLoggingLevel)lua_tointeger(L, 1));
+	return 0;
+}
+
+static int l_KLOG_SET_OPTIONS(lua_State* L)
+{
+	if (lua_isinteger(L, 1))
+		KLOG_SET_OPTIONS((KLoggingOptions)lua_tointeger(L, 1));
+	return 0;
+}
+
+static int l_KLOG_GET_OPTIONS(lua_State* L)
+{
+	lua_pushinteger(L, KLOG_GET_OPTIONS());
+	return 1;
+}
+
+static int l_KLOG_SET_LINEEND(lua_State* L)
+{
+	int ret = -1;
+	if (lua_isstring(L, 1))
+		ret = KLOG_SET_LINEEND(lua_tostring(L, 1));
+	lua_pushinteger(L, ret);
+	return 1;
+}
+
+static int l_KVERSION(lua_State* L)
+{
+	lua_pushstring(L, KVERSION());
+	return 1;
+}
+
+static int l_KCONSOLE(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KCONSOLE(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGE(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGE(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGW(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGW(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGI(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGI(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGD(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGD(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGV(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGV(lua_tostring(L, 1));
+	return 0;
+}
+
+#define STR_AND_VAL(X) { #X, X }
+struct NameAndVal {
+	const char *name;
+	uint32_t val;
+};
+
+extern "C" int luaopen_libklogging(lua_State* L)
+{
+	/* Register functions */
+	static const struct luaL_Reg l_libklogging[] = {
+		STR_AND_VAL(l_KVERSION),
+		STR_AND_VAL(l_KLOG_SET_LEVEL),
+		STR_AND_VAL(l_KLOG_SET_OPTIONS),
+		STR_AND_VAL(l_KLOG_GET_OPTIONS),
+		STR_AND_VAL(l_KLOG_SET_LINEEND),
+		STR_AND_VAL(l_KCONSOLE),
+		STR_AND_VAL(l_KLOGE),
+		STR_AND_VAL(l_KLOGW),
+		STR_AND_VAL(l_KLOGI),
+		STR_AND_VAL(l_KLOGD),
+		STR_AND_VAL(l_KLOGV),
+		{ NULL, NULL }
+	};
+	luaL_newlib(L, l_libklogging);
+
+	/* Register enums, constants, ... */
+	static const struct NameAndVal l_syms[] = {
+		STR_AND_VAL(KLOGGING_LEVEL_OFF),
+		STR_AND_VAL(KLOGGING_LEVEL_ERROR),
+		STR_AND_VAL(KLOGGING_LEVEL_WARNING),
+		STR_AND_VAL(KLOGGING_LEVEL_DEBUG),
+		STR_AND_VAL(KLOGGING_LEVEL_VERBOSE),
+		STR_AND_VAL(KLOGGING_TO_STDOUT),
+		STR_AND_VAL(KLOGGING_TO_STDERR),
+		STR_AND_VAL(KLOGGING_TO_LOGCAT),
+		STR_AND_VAL(KLOGGING_FLUSH_IMMEDIATELY),
+		STR_AND_VAL(KLOGGING_NO_TIMESTAMP),
+		STR_AND_VAL(KLOGGING_NO_LOGTYPE),
+		STR_AND_VAL(KLOGGING_NO_SOURCEFILE)
+	};
+	for (size_t i = 0; i < sizeof(l_syms)/sizeof(l_syms[0]); ++i) {
+		lua_pushinteger(L, l_syms[i].val);
+		lua_setglobal(L, l_syms[i].name);
+	}
+
+	/* Disable this by default, since lua has no __FILE__, __LINE__, __FUNCTION__ info */
+	KLOG_SET_OPTIONS(KLOGGING_NO_SOURCEFILE);
+
+	return 1;
 }
