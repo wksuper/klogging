@@ -7,14 +7,16 @@ AR = $(CROSS_COMPILE)ar
 
 OBJECTS = myprog.o
 TARGET = myprog
-CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
-
+CFLAGS += -I../include -O2 -fPIC -DVERSION=\"$(VERSION)\"
+ifeq ($(CONFIG_SUPPORT_LUA), 1)
+LDLIBS += -llua -lm
+endif
 
 .PHONY: all
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) ../src/libklogging.a
-	$(LD) -o $@ $(LDFLAGS) $^ -lstdc++ -llua -lm
+	$(LD) -o $@ $(LDFLAGS) $^ $(LDLIBS) -lstdc++
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

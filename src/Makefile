@@ -8,13 +8,15 @@ OBJECTS = klogging.o
 SHARED_LIB_TARGET = libklogging.so
 STATIC_LIB_TARGET = libklogging.a
 CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
-
+ifeq ($(CONFIG_SUPPORT_LUA), 1)
+CFLAGS += -DCONFIG_SUPPORT_LUA=1
+endif
 
 .PHONY: all
 all: $(SHARED_LIB_TARGET) $(STATIC_LIB_TARGET)
 
 $(SHARED_LIB_TARGET): $(OBJECTS)
-	$(LD) $(LDFLAGS) -shared -o $@ -llua $^
+	$(LD) $(LDFLAGS) -shared -o $@ $^
 
 $(STATIC_LIB_TARGET): $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^

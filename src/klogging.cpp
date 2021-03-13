@@ -33,7 +33,9 @@
 #ifdef ANDROID
 #include <android/log.h>
 #endif
+#ifdef CONFIG_SUPPORT_LUA
 #include <lua.hpp>
+#endif
 
 static std::mutex s_mutex_for_file;
 static std::mutex s_mutex_for_stdout;
@@ -437,7 +439,7 @@ extern "C" void _klogging_v(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-
+#ifdef CONFIG_SUPPORT_LUA
 /********** Lua Interfaces **********/
 
 static int l_KLOG_SET_LEVEL(lua_State* L)
@@ -567,3 +569,4 @@ extern "C" int luaopen_libklogging(lua_State* L)
 
 	return 1;
 }
+#endif
