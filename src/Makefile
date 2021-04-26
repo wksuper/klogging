@@ -7,7 +7,7 @@ AR = $(CROSS_COMPILE)ar
 OBJECTS = klogging.o
 SHARED_LIB_TARGET = libklogging.so
 STATIC_LIB_TARGET = libklogging.a
-CFLAGS += -I../include -fPIC -O2 -DVERSION=\"$(VERSION)\"
+CFLAGS += -I../include -fPIC -O2
 ifeq ($(CONFIG_SUPPORT_LUA), 1)
 CFLAGS += -DCONFIG_SUPPORT_LUA=1
 endif

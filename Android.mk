@@ -5,8 +5,6 @@ LOCAL_MODULE := libklogging
 LOCAL_SRC_FILES := src/klogging.cpp
 LOCAL_SHARED_LIBRARIES := liblog
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
-include $(LOCAL_PATH)/VERSION
-LOCAL_CFLAGS += -DVERSION=\"$(VERSION)\"
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
 

@@ -43,7 +43,7 @@ static std::mutex s_mutex_for_stderr;
 
 const char *_cpp_klogging_version()
 {
-	return VERSION;
+	return "0.7";
 }
 
 KLogging::KLogging()
@@ -356,42 +356,42 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 KLogging _klogging;
 
 
-extern "C" const char *_klogging_version()
+extern "C" KLOGGING_API const char *_klogging_version()
 {
 	return _cpp_klogging_version();
 }
 
-extern "C" int _klogging_set(int argc, char *argv[])
+extern "C" KLOGGING_API int _klogging_set(int argc, char *argv[])
 {
 	return _klogging.Set(argc, argv);
 }
 
-extern "C" int _klogging_set_file(const char *filename)
+extern "C" KLOGGING_API int _klogging_set_file(const char *filename)
 {
 	return _klogging.SetFile(filename);
 }
 
-extern "C" void _klogging_set_options(KLoggingOptions options)
+extern "C" KLOGGING_API void _klogging_set_options(KLoggingOptions options)
 {
 	_klogging.SetOptions(options);
 }
 
-extern "C" KLoggingOptions _klogging_get_options()
+extern "C" KLOGGING_API KLoggingOptions _klogging_get_options()
 {
 	return _klogging.GetOptions();
 }
 
-extern "C" void _klogging_set_level(enum KLoggingLevel level)
+extern "C" KLOGGING_API void _klogging_set_level(enum KLoggingLevel level)
 {
 	_klogging.SetLevel(level);
 }
 
-extern "C" int _klogging_set_lineend(const char *end)
+extern "C" KLOGGING_API int _klogging_set_lineend(const char *end)
 {
 	return _klogging.SetLineEnd(end);
 }
 
-extern "C" void _klogging_c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -399,7 +399,7 @@ extern "C" void _klogging_c(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-extern "C" void _klogging_e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -407,7 +407,7 @@ extern "C" void _klogging_e(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-extern "C" void _klogging_w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -415,7 +415,7 @@ extern "C" void _klogging_w(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-extern "C" void _klogging_i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -423,7 +423,7 @@ extern "C" void _klogging_i(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-extern "C" void _klogging_d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -431,7 +431,7 @@ extern "C" void _klogging_d(const char *file, int line, const char *function, co
 	va_end(args);
 }
 
-extern "C" void _klogging_v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+extern "C" KLOGGING_API void _klogging_v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -525,7 +525,7 @@ struct NameAndVal {
 	uint32_t val;
 };
 
-extern "C" int luaopen_libklogging(lua_State* L)
+extern "C" KLOGGING_API int luaopen_libklogging(lua_State* L)
 {
 	/* Register functions */
 	static const struct luaL_Reg l_libklogging[] = {

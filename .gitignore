@@ -32,3 +32,8 @@
 *.app
 myprog
 
+# vscode
+.vscode/
+
+# cmake
+build/

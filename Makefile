@@ -1,6 +1,3 @@
-include VERSION
-export VERSION
-
 # export CROSS_COMPILE ?= arm-linux-androideabi-
 export LDFLAGS ?=
 

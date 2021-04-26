@@ -28,6 +28,12 @@
 #define LOG_TAG NULL
 #endif
 
+#if defined(_WIN32)
+#define KLOGGING_API __declspec(dllexport)
+#else
+#define KLOGGING_API
+#endif
+
 typedef uint16_t KLoggingOptions;
 
 static const KLoggingOptions KLOGGING_TO_STDOUT = (0x1 << 0);
@@ -64,7 +70,7 @@ enum KLoggingLevel {
 const char *_cpp_klogging_version();
 
 // CPP APIs
-class KLogging {
+class KLOGGING_API KLogging {
 public:
 	KLogging();
 

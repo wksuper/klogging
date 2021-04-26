@@ -7,7 +7,7 @@ AR = $(CROSS_COMPILE)ar
 
 OBJECTS = myprog.o
 TARGET = myprog
-CFLAGS += -I../include -O2 -fPIC -DVERSION=\"$(VERSION)\"
+CFLAGS += -I../include -O2 -fPIC
 ifeq ($(CONFIG_SUPPORT_LUA), 1)
 LDLIBS += -llua -lm
 endif
