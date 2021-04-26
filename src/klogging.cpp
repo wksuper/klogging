@@ -43,7 +43,7 @@ static std::mutex s_mutex_for_stderr;
 
 const char *_cpp_klogging_version()
 {
-	return "0.7";
+	return "0.8";
 }
 
 KLogging::KLogging()
