@@ -270,9 +270,7 @@ void KLogging::Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts,
 	KLoggingOptions options = (m_options | enOpts) & ~disOpts;
 	if (!lineEnd) {
 		lineEnd =
-#if defined(__APPLE__)
-			"\r";
-#elif defined(_WIN32)
+#if defined(_WIN32)
 			"\r\n";
 #else
 			"\n";
@@ -293,7 +291,7 @@ void KLogging::Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts,
 
 		gettimeofday(&now, NULL);
 		strftime(timestamp, sizeof(timestamp), "%m-%d %H:%M:%S", localtime(&now.tv_sec));
-		sprintf(timestamp + 14, ".%06ld ", now.tv_usec);
+		sprintf(timestamp + 14, ".%06ld ", (long)now.tv_usec);
 #endif
 	}
 
