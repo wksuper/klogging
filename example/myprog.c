@@ -4,9 +4,8 @@ int main(int argc, char *argv[])
 {
         KLOG_SET(argc, argv);
 
-        printf("klogging version: %s\n", KVERSION());
-
-        KCONSOLE("I'm KCONSOLE");
+        KLOGA("I'm KLOGA");
+        KLOGF("I'm KLOGF");
         KLOGE("I'm KLOGE");
         KLOGW("I'm KLOGW");
         KLOGI("I'm KLOGI");

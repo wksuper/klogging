@@ -28,8 +28,6 @@
 #include <stdio.h>
 #include <mutex>
 #include <string.h>
-#include <string>
-#include <stdlib.h>
 #ifdef ANDROID
 #include <android/log.h>
 #endif
@@ -37,21 +35,60 @@
 #include <lua.hpp>
 #endif
 
-static std::mutex s_mutex_for_file;
-static std::mutex s_mutex_for_stdout;
-static std::mutex s_mutex_for_stderr;
+// CPP APIs
+class KLOGGING_API KLogging {
+public:
+	static KLogging &Instance();
 
-const char *_cpp_klogging_version()
-{
-	return "0.8";
-}
+	int Set(int argc, char *argv[]);
+	int SetFile(const char *filename);
+	void EnableOptions(KLoggingOptions options) { m_options |= options; }
+	void DisableOptions(KLoggingOptions options) { m_options &= ~options; }
+	void SetLevel(KLoggingLevel level) { m_level = level; }
+
+	void a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+	void v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+
+	~KLogging();
+
+private:
+	KLogging();
+	KLogging(const KLogging &);
+	KLogging &operator=(const KLogging &);
+	inline bool CanPrintFatal() const { return m_level >= KLOGGING_LEVEL_FATAL; }
+	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
+	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
+	inline bool CanPrintInfo() const { return m_level >= KLOGGING_LEVEL_INFO; }
+	inline bool CanPrintDebug() const { return m_level >= KLOGGING_LEVEL_DEBUG; }
+	inline bool CanPrintVerbose() const { return m_level >= KLOGGING_LEVEL_VERBOSE; }
+	void Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+
+	FILE *m_file;
+	KLoggingOptions m_options;
+	KLoggingLevel m_level;
+
+	std::mutex m_mutexForFile;
+	std::mutex m_mutexForStdout;
+	std::mutex m_mutexForStderr;
+};
 
 KLogging::KLogging()
 	: m_file(NULL)
 	, m_options(0)
 	, m_level(KLOGGING_LEVEL_OFF)
 {
-	strncpy(m_lineEnd, "\n", sizeof(m_lineEnd));
 }
 
 KLogging::~KLogging()
@@ -70,7 +107,7 @@ int KLogging::Set(int argc, char *argv[])
 		const char *key;
 		size_t key_len;
 
-		key = "KLOG_SET_OPTIONS=";
+		key = "KLOG_ENABLE_OPTIONS=";
 		key_len = strlen(key);
 		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
 			KLoggingOptions options = 0;
@@ -85,7 +122,7 @@ int KLogging::Set(int argc, char *argv[])
 				options |= strtol(arg + key_len, NULL, 10);
 			}
 
-			KLOG_SET_OPTIONS(options);
+			KLOG_ENABLE_OPTIONS(options);
 		}
 
 		key = "KLOG_SET_LEVEL=";
@@ -101,42 +138,6 @@ int KLogging::Set(int argc, char *argv[])
 		key_len = strlen(key);
 		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
 			int rc = KLOG_SET_FILE(arg + key_len);
-			if (rc != 0)
-				ret = rc;
-		}
-
-		key = "KLOG_SET_LINEEND=";
-		key_len = strlen(key);
-		if ((arg_len >= key_len) && strncmp(arg, key, key_len) == 0) {
-			std::string tmp;
-			const char *val = arg + key_len;
-			size_t val_len = arg_len - key_len;
-			for (size_t i = 0; i < val_len;) {
-				if (val[i] == '\\' && (i + 1 < val_len)) {
-					switch (val[i+1]) {
-					case 'n':
-						tmp.push_back('\n');
-						i += 2;
-						break;
-					case 'r':
-						tmp.push_back('\r');
-						i += 2;
-						break;
-					case 't':
-						tmp.push_back('\t');
-						i += 2;
-						break;
-					default:
-						tmp.push_back(val[i]);
-						++i;
-						break;
-					}
-				} else {
-					tmp.push_back(val[i]);
-					++i;
-				}
-			}
-			int rc = KLOG_SET_LINEEND(tmp.c_str());
 			if (rc != 0)
 				ret = rc;
 		}
@@ -157,125 +158,128 @@ int KLogging::SetFile(const char *filename)
 	}
 }
 
-int KLogging::SetLineEnd(const char *end)
-{
-	size_t len;
-
-	if (!end)
-		return -1;
-
-	len = strlen(end);
-	if (len + 1 > sizeof(m_lineEnd))
-		return -1;
-
-	strncpy(m_lineEnd, end, sizeof(m_lineEnd));
-	return 0;
-}
-
-void KLogging::c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	c(file, line, function, log_tag, format, args);
+	a(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::c(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
-	if (!IsToConsole()) {
-		// If log is not being printed to console, print it here for end user
-		std::lock_guard<std::mutex> lock(s_mutex_for_stdout);
-		vfprintf(stdout, format, args);
-		fprintf(stdout, "%s", m_lineEnd);
-		fflush(stdout); // update the result for end user
-	} else {
-		// If log is being printed to console, just do nothing here
+	Print('A', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
+}
+
+void KLogging::f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	f(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
+	va_end(args);
+}
+
+void KLogging::f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
+{
+	if (CanPrintFatal()) {
+		Print('F', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
-	Print('C', file, line, function, log_tag, format, args);
 }
 
-void KLogging::e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	e(file, line, function, log_tag, format, args);
+	e(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::e(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	if (CanPrintError()) {
-		Print('E', file, line, function, log_tag, format, args);
+		Print('E', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
 }
 
-void KLogging::w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	w(file, line, function, log_tag, format, args);
+	w(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::w(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	if (CanPrintWarning()) {
-		Print('W', file, line, function, log_tag, format, args);
+		Print('W', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
 }
 
-void KLogging::i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	i(file, line, function, log_tag, format, args);
+	i(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::i(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	if (CanPrintInfo()) {
-		Print('I', file, line, function, log_tag, format, args);
+		Print('I', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
 }
 
-void KLogging::d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	d(file, line, function, log_tag, format, args);
+	d(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::d(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	if (CanPrintDebug()) {
-		Print('D', file, line, function, log_tag, format, args);
+		Print('D', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
 }
 
-void KLogging::v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+void KLogging::v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	v(file, line, function, log_tag, format, args);
+	v(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-void KLogging::v(const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	if (CanPrintVerbose()) {
-		Print('V', file, line, function, log_tag, format, args);
+		Print('V', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	}
 }
 
-void KLogging::Print(char type, const char *file, int line, const char *function, const char *log_tag, const char *format, va_list args)
+void KLogging::Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
 {
 	char timestamp[32];
 	char logtype[3];
 	char separator[3];
 
-	if (m_options & KLOGGING_NO_TIMESTAMP) {
+	KLoggingOptions options = (m_options | enOpts) & ~disOpts;
+	if (!lineEnd) {
+		lineEnd =
+#if defined(__APPLE__)
+			"\r";
+#elif defined(_WIN32)
+			"\r\n";
+#else
+			"\n";
+#endif
+	}
+
+	if (options & KLOGGING_NO_TIMESTAMP) {
 		timestamp[0] = '\0';
 	} else {
 #ifdef _WIN32
@@ -293,7 +297,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 #endif
 	}
 
-	if (m_options & KLOGGING_NO_LOGTYPE) {
+	if (options & KLOGGING_NO_LOGTYPE) {
 		logtype[0] = '\0';
 	} else {
 		logtype[0] = type;
@@ -301,7 +305,7 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 		logtype[2] = '\0';
 	}
 
-	if ((m_options & KLOGGING_NO_TIMESTAMP) && (m_options & KLOGGING_NO_LOGTYPE)) {
+	if ((options & KLOGGING_NO_TIMESTAMP) && (options & KLOGGING_NO_LOGTYPE)) {
 		separator[0] = '\0';
 	} else {
 		separator[0] = '|';
@@ -310,132 +314,138 @@ void KLogging::Print(char type, const char *file, int line, const char *function
 	}
 
 	if (m_file) {
-		std::lock_guard<std::mutex> lock(s_mutex_for_file);
+		std::lock_guard<std::mutex> _l(m_mutexForFile);
 		fprintf(m_file, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(m_file, format, args);
-		if (m_options & KLOGGING_NO_SOURCEFILE)
-			fprintf(m_file, "%s", m_lineEnd);
+		if (options & KLOGGING_NO_SOURCEFILE)
+			fprintf(m_file, "%s", lineEnd);
 		else
-			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
+			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, lineEnd);
+		if (options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(m_file);
 	}
 
-	if (m_options & KLOGGING_TO_STDOUT) {
-		std::lock_guard<std::mutex> lock(s_mutex_for_stdout);
+	if (options & KLOGGING_TO_STDOUT) {
+		std::lock_guard<std::mutex> _l(m_mutexForStdout);
 		fprintf(stdout, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(stdout, format, args);
-		if (m_options & KLOGGING_NO_SOURCEFILE)
-			fprintf(stdout, "%s", m_lineEnd);
+		if (options & KLOGGING_NO_SOURCEFILE)
+			fprintf(stdout, "%s", lineEnd);
 		else
-			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
+			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, lineEnd);
+		if (options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stdout);
 	}
 
-	if (m_options & KLOGGING_TO_STDERR) {
-		std::lock_guard<std::mutex> lock(s_mutex_for_stderr);
+	if (options & KLOGGING_TO_STDERR) {
+		std::lock_guard<std::mutex> _l(m_mutexForStderr);
 		fprintf(stderr, "%s%s%s", timestamp, logtype, separator);
 		vfprintf(stderr, format, args);
-		if (m_options & KLOGGING_NO_SOURCEFILE)
-			fprintf(stderr, "%s", m_lineEnd);
+		if (options & KLOGGING_NO_SOURCEFILE)
+			fprintf(stderr, "%s", lineEnd);
 		else
-			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, m_lineEnd);
-		if (m_options & KLOGGING_FLUSH_IMMEDIATELY)
+			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, lineEnd);
+		if (options & KLOGGING_FLUSH_IMMEDIATELY)
 			fflush(stderr);
 	}
 
-	if (m_options & KLOGGING_TO_LOGCAT) {
+	if (options & KLOGGING_TO_LOGCAT) {
 #ifdef ANDROID
-		__android_log_vprint(ANDROID_LOG_INFO, log_tag, format, args);
+		__android_log_vprint(ANDROID_LOG_INFO, logTag, format, args);
 #endif
 	}
 }
 
-
-KLogging _klogging;
-
-
-extern "C" KLOGGING_API const char *_klogging_version()
+KLogging &KLogging::Instance()
 {
-	return _cpp_klogging_version();
+	static KLogging s_klogging;
+	return s_klogging;
 }
 
-extern "C" KLOGGING_API int _klogging_set(int argc, char *argv[])
+
+KLOGGING_API const char *_klogging_version()
 {
-	return _klogging.Set(argc, argv);
+	return "0.8";
 }
 
-extern "C" KLOGGING_API int _klogging_set_file(const char *filename)
+KLOGGING_API int _klogging_set(int argc, char *argv[])
 {
-	return _klogging.SetFile(filename);
+	return KLogging::Instance().Set(argc, argv);
 }
 
-extern "C" KLOGGING_API void _klogging_set_options(KLoggingOptions options)
+KLOGGING_API int _klogging_set_file(const char *filename)
 {
-	_klogging.SetOptions(options);
+	return KLogging::Instance().SetFile(filename);
 }
 
-extern "C" KLOGGING_API KLoggingOptions _klogging_get_options()
+KLOGGING_API void _klogging_enable_options(KLoggingOptions options)
 {
-	return _klogging.GetOptions();
+	KLogging::Instance().EnableOptions(options);
 }
 
-extern "C" KLOGGING_API void _klogging_set_level(enum KLoggingLevel level)
+KLOGGING_API void _klogging_disable_options(KLoggingOptions options)
 {
-	_klogging.SetLevel(level);
+	KLogging::Instance().DisableOptions(options);
 }
 
-extern "C" KLOGGING_API int _klogging_set_lineend(const char *end)
+KLOGGING_API void _klogging_set_level(enum KLoggingLevel level)
 {
-	return _klogging.SetLineEnd(end);
+	KLogging::Instance().SetLevel(level);
 }
 
-extern "C" KLOGGING_API void _klogging_c(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.c(file, line, function, log_tag, format, args);
+	KLogging::Instance().a(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-extern "C" KLOGGING_API void _klogging_e(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.e(file, line, function, log_tag, format, args);
+	KLogging::Instance().f(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-extern "C" KLOGGING_API void _klogging_w(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.w(file, line, function, log_tag, format, args);
+	KLogging::Instance().e(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-extern "C" KLOGGING_API void _klogging_i(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.i(file, line, function, log_tag, format, args);
+	KLogging::Instance().w(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-extern "C" KLOGGING_API void _klogging_d(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.d(file, line, function, log_tag, format, args);
+	KLogging::Instance().i(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
-extern "C" KLOGGING_API void _klogging_v(const char *file, int line, const char *function, const char *log_tag, const char *format, ...)
+KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	_klogging.v(file, line, function, log_tag, format, args);
+	KLogging::Instance().d(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
+	va_end(args);
+}
+
+KLOGGING_API void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	KLogging::Instance().v(enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
 	va_end(args);
 }
 
@@ -449,38 +459,37 @@ static int l_KLOG_SET_LEVEL(lua_State* L)
 	return 0;
 }
 
-static int l_KLOG_SET_OPTIONS(lua_State* L)
+static int l_KLOG_ENABLE_OPTIONS(lua_State* L)
 {
 	if (lua_isinteger(L, 1))
-		KLOG_SET_OPTIONS((KLoggingOptions)lua_tointeger(L, 1));
+		KLOG_ENABLE_OPTIONS((KLoggingOptions)lua_tointeger(L, 1));
 	return 0;
 }
 
-static int l_KLOG_GET_OPTIONS(lua_State* L)
+static int l_KLOG_DISABLE_OPTIONS(lua_State* L)
 {
-	lua_pushinteger(L, KLOG_GET_OPTIONS());
+	if (lua_isinteger(L, 1))
+		KLOG_DISABLE_OPTIONS((KLoggingOptions)lua_tointeger(L, 1));
+	return 0;
+}
+
+static int l_KLOG_VERSION(lua_State* L)
+{
+	lua_pushstring(L, KLOG_VERSION());
 	return 1;
 }
 
-static int l_KLOG_SET_LINEEND(lua_State* L)
-{
-	int ret = -1;
-	if (lua_isstring(L, 1))
-		ret = KLOG_SET_LINEEND(lua_tostring(L, 1));
-	lua_pushinteger(L, ret);
-	return 1;
-}
-
-static int l_KVERSION(lua_State* L)
-{
-	lua_pushstring(L, KVERSION());
-	return 1;
-}
-
-static int l_KCONSOLE(lua_State* L)
+static int l_KLOGA(lua_State* L)
 {
 	if (lua_isstring(L, 1))
-		KCONSOLE(lua_tostring(L, 1));
+		KLOGA(lua_tostring(L, 1));
+	return 0;
+}
+
+static int l_KLOGF(lua_State* L)
+{
+	if (lua_isstring(L, 1))
+		KLOGF(lua_tostring(L, 1));
 	return 0;
 }
 
@@ -529,12 +538,12 @@ extern "C" KLOGGING_API int luaopen_libklogging(lua_State* L)
 {
 	/* Register functions */
 	static const struct luaL_Reg l_libklogging[] = {
-		STR_AND_VAL(l_KVERSION),
+		STR_AND_VAL(l_KLOG_VERSION),
 		STR_AND_VAL(l_KLOG_SET_LEVEL),
-		STR_AND_VAL(l_KLOG_SET_OPTIONS),
-		STR_AND_VAL(l_KLOG_GET_OPTIONS),
-		STR_AND_VAL(l_KLOG_SET_LINEEND),
-		STR_AND_VAL(l_KCONSOLE),
+		STR_AND_VAL(l_KLOG_ENABLE_OPTIONS),
+		STR_AND_VAL(l_KLOG_DISABLE_OPTIONS),
+		STR_AND_VAL(l_KLOGA),
+		STR_AND_VAL(l_KLOGF),
 		STR_AND_VAL(l_KLOGE),
 		STR_AND_VAL(l_KLOGW),
 		STR_AND_VAL(l_KLOGI),
@@ -547,6 +556,7 @@ extern "C" KLOGGING_API int luaopen_libklogging(lua_State* L)
 	/* Register enums, constants, ... */
 	static const struct NameAndVal l_syms[] = {
 		STR_AND_VAL(KLOGGING_LEVEL_OFF),
+		STR_AND_VAL(KLOGGING_LEVEL_FATAL),
 		STR_AND_VAL(KLOGGING_LEVEL_ERROR),
 		STR_AND_VAL(KLOGGING_LEVEL_WARNING),
 		STR_AND_VAL(KLOGGING_LEVEL_DEBUG),
@@ -565,7 +575,7 @@ extern "C" KLOGGING_API int luaopen_libklogging(lua_State* L)
 	}
 
 	/* Disable this by default, since lua has no __FILE__, __LINE__, __FUNCTION__ info */
-	KLOG_SET_OPTIONS(KLOGGING_NO_SOURCEFILE);
+	KLOG_ENABLE_OPTIONS(KLOGGING_NO_SOURCEFILE);
 
 	return 1;
 }
