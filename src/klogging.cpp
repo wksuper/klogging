@@ -365,7 +365,7 @@ KLogging &KLogging::Instance()
 
 KLOGGING_API const char *_klogging_version()
 {
-	return "0.8";
+	return "0.9";
 }
 
 KLOGGING_API int _klogging_set(int argc, char *argv[])
