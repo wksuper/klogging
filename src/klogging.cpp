@@ -36,7 +36,7 @@
 #endif
 
 // CPP APIs
-class KLOGGING_API KLogging {
+class KLogging {
 public:
 	static KLogging &Instance();
 

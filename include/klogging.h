@@ -70,19 +70,19 @@ enum KLoggingLevel {
 	KLOGGING_LEVEL_VERBOSE = 6
 };
 
-const char *_klogging_version();
-int _klogging_set(int argc, char *argv[]);
-int _klogging_set_file(const char *filename);
-void _klogging_enable_options(KLoggingOptions options);
-void _klogging_disable_options(KLoggingOptions options);
-void _klogging_set_level(enum KLoggingLevel level);
-void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
-void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API const char *_klogging_version();
+KLOGGING_API int _klogging_set(int argc, char *argv[]);
+KLOGGING_API int _klogging_set_file(const char *filename);
+KLOGGING_API void _klogging_enable_options(KLoggingOptions options);
+KLOGGING_API void _klogging_disable_options(KLoggingOptions options);
+KLOGGING_API void _klogging_set_level(enum KLoggingLevel level);
+KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
+KLOGGING_API void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...);
 
 
 // KLOG_SET() is used in the entry of main(int argc, char *argv[]).
