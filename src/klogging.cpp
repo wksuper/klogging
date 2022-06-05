@@ -53,7 +53,9 @@ public:
 	inline bool CanPrintDebug() const { return m_level >= KLOGGING_LEVEL_DEBUG; }
 	inline bool CanPrintVerbose() const { return m_level >= KLOGGING_LEVEL_VERBOSE; }
 
-	void Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args);
+	void Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+		const char *file, int line, const char *function, const char *logTag,
+		const char *format, va_list args);
 
 	~KLogging();
 
@@ -145,7 +147,38 @@ int KLogging::SetFile(const char *filename)
 	}
 }
 
-void KLogging::Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, va_list args)
+static void PrintToFd(FILE *fd,
+	const char *timestamp, const char *logtype, const char *separator,
+	const char *file, int line, const char *function,
+	const char *lineEnd, KLoggingOptions options,
+	const char *format, va_list args)
+{
+	fprintf(fd, "%s%s%s", timestamp, logtype, separator);
+
+	// va_list could be either
+	// typedef __va_list_tag va_list[1];
+	// or
+	// typedef char * va_list;
+	va_list _args;
+	if (sizeof(_args) / sizeof(_args[0]) == 1) {
+		memcpy(&_args, args, sizeof(va_list));
+		vfprintf(fd, format, _args);
+	} else {
+		vfprintf(fd, format, args);
+	}
+
+	if (options & KLOGGING_NO_SOURCEFILE)
+		fprintf(fd, "%s", lineEnd);
+	else
+		fprintf(fd, " (%s:%d:%s)%s", file, line, function, lineEnd);
+	if (options & KLOGGING_FLUSH_IMMEDIATELY)
+		fflush(fd);
+}
+
+void KLogging::Print(
+	char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, va_list args)
 {
 	char timestamp[32];
 	char logtype[3];
@@ -197,43 +230,35 @@ void KLogging::Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts,
 
 	if (m_file) {
 		std::lock_guard<std::mutex> _l(m_mutexForFile);
-		fprintf(m_file, "%s%s%s", timestamp, logtype, separator);
-		vfprintf(m_file, format, args);
-		if (options & KLOGGING_NO_SOURCEFILE)
-			fprintf(m_file, "%s", lineEnd);
-		else
-			fprintf(m_file, " (%s:%d:%s)%s", file, line, function, lineEnd);
-		if (options & KLOGGING_FLUSH_IMMEDIATELY)
-			fflush(m_file);
+		PrintToFd(m_file,
+			timestamp, logtype, separator,
+			file, line, function,
+			lineEnd, options,
+			format, args);
 	}
 
 	if (options & KLOGGING_TO_STDOUT) {
 		std::lock_guard<std::mutex> _l(m_mutexForStdout);
-		fprintf(stdout, "%s%s%s", timestamp, logtype, separator);
-		vfprintf(stdout, format, args);
-		if (options & KLOGGING_NO_SOURCEFILE)
-			fprintf(stdout, "%s", lineEnd);
-		else
-			fprintf(stdout, " (%s:%d:%s)%s", file, line, function, lineEnd);
-		if (options & KLOGGING_FLUSH_IMMEDIATELY)
-			fflush(stdout);
+		PrintToFd(stdout,
+			timestamp, logtype, separator,
+			file, line, function,
+			lineEnd, options,
+			format, args);
 	}
 
 	if (options & KLOGGING_TO_STDERR) {
 		std::lock_guard<std::mutex> _l(m_mutexForStderr);
-		fprintf(stderr, "%s%s%s", timestamp, logtype, separator);
-		vfprintf(stderr, format, args);
-		if (options & KLOGGING_NO_SOURCEFILE)
-			fprintf(stderr, "%s", lineEnd);
-		else
-			fprintf(stderr, " (%s:%d:%s)%s", file, line, function, lineEnd);
-		if (options & KLOGGING_FLUSH_IMMEDIATELY)
-			fflush(stderr);
+		PrintToFd(stderr,
+			timestamp, logtype, separator,
+			file, line, function,
+			lineEnd, options,
+			format, args);
 	}
 
 	if (options & KLOGGING_TO_LOGCAT) {
 #ifdef ANDROID
 		__android_log_vprint(ANDROID_LOG_INFO, logTag, format, args);
+		// args is changed, don't use it in below lines
 #endif
 	}
 }
@@ -275,7 +300,9 @@ KLOGGING_API void _klogging_set_level(enum KLoggingLevel level)
 	KLogging::Instance().SetLevel(level);
 }
 
-KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -283,7 +310,9 @@ KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	va_end(args);
 }
 
-KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintFatal()) {
@@ -294,7 +323,9 @@ KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	}
 }
 
-KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintError()) {
@@ -305,7 +336,9 @@ KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	}
 }
 
-KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintWarning()) {
@@ -316,7 +349,9 @@ KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	}
 }
 
-KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintInfo()) {
@@ -327,7 +362,9 @@ KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	}
 }
 
-KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintDebug()) {
@@ -338,7 +375,9 @@ KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, c
 	}
 }
 
-KLOGGING_API void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd, const char *file, int line, const char *function, const char *logTag, const char *format, ...)
+KLOGGING_API void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	const char *file, int line, const char *function, const char *logTag,
+	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrintVerbose()) {
