@@ -140,6 +140,8 @@ int KLogging::Set(int argc, char *argv[])
 
 int KLogging::SetFile(const char *filename)
 {
+	std::lock_guard<std::mutex> _l(m_mutexForFile);
+
 	if (m_file)
 		fclose(m_file);
 	if (filename) {
@@ -226,13 +228,15 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 		separator[2] = '\0';
 	}
 
-	if (m_file) {
+	{
 		std::lock_guard<std::mutex> _l(m_mutexForFile);
-		PrintToFd(m_file,
-			timestamp, logtype, separator,
-			file, line, function,
-			lineEnd, options,
-			format, args);
+		if (m_file) {
+			PrintToFd(m_file,
+				timestamp, logtype, separator,
+				file, line, function,
+				lineEnd, options,
+				format, args);
+		}
 	}
 
 	if (options & KLOGGING_TO_STDOUT) {
