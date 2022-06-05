@@ -46,15 +46,19 @@ public:
 	void DisableOptions(KLoggingOptions options) { m_options &= ~options; }
 	void SetLevel(KLoggingLevel level) { m_level = level; }
 
-	inline bool CanPrintFatal() const { return m_level >= KLOGGING_LEVEL_FATAL; }
-	inline bool CanPrintError() const { return m_level >= KLOGGING_LEVEL_ERROR; }
-	inline bool CanPrintWarning() const { return m_level >= KLOGGING_LEVEL_WARNING; }
-	inline bool CanPrintInfo() const { return m_level >= KLOGGING_LEVEL_INFO; }
-	inline bool CanPrintDebug() const { return m_level >= KLOGGING_LEVEL_DEBUG; }
-	inline bool CanPrintVerbose() const { return m_level >= KLOGGING_LEVEL_VERBOSE; }
+	inline bool CanPrint(char type) const
+	{
+		return (type == 'F' && m_level >= KLOGGING_LEVEL_FATAL)
+			|| (type == 'E' && m_level >= KLOGGING_LEVEL_ERROR)
+			|| (type == 'W' && m_level >= KLOGGING_LEVEL_WARNING)
+			|| (type == 'I' && m_level >= KLOGGING_LEVEL_INFO)
+			|| (type == 'D' && m_level >= KLOGGING_LEVEL_DEBUG)
+			|| (type == 'V' && m_level >= KLOGGING_LEVEL_VERBOSE)
+			|| (type == 'A');
+	}
 
-	void Print(char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-		const char *file, int line, const char *function, const char *logTag,
+	void Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+		char type, const char *file, int line, const char *function, const char *logTag,
 		const char *format, va_list args);
 
 	~KLogging();
@@ -175,9 +179,8 @@ static void PrintToFd(FILE *fd,
 		fflush(fd);
 }
 
-void KLogging::Print(
-	char type, KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
+void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	char type, const char *file, int line, const char *function, const char *logTag,
 	const char *format, va_list args)
 {
 	char timestamp[32];
@@ -300,90 +303,15 @@ KLOGGING_API void _klogging_set_level(enum KLoggingLevel level)
 	KLogging::Instance().SetLevel(level);
 }
 
-KLOGGING_API void _klogging_a(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	KLogging::Instance().Print('A', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-	va_end(args);
-}
-
-KLOGGING_API void _klogging_f(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
+KLOGGING_API void _klogging_print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
+	char type, const char *file, int line, const char *function, const char *logTag,
 	const char *format, ...)
 {
 	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintFatal()) {
+	if (kl.CanPrint(type)) {
 		va_list args;
 		va_start(args, format);
-		kl.Print('F', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-		va_end(args);
-	}
-}
-
-KLOGGING_API void _klogging_e(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintError()) {
-		va_list args;
-		va_start(args, format);
-		kl.Print('E', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-		va_end(args);
-	}
-}
-
-KLOGGING_API void _klogging_w(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintWarning()) {
-		va_list args;
-		va_start(args, format);
-		kl.Print('W', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-		va_end(args);
-	}
-}
-
-KLOGGING_API void _klogging_i(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintInfo()) {
-		va_list args;
-		va_start(args, format);
-		kl.Print('I', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-		va_end(args);
-	}
-}
-
-KLOGGING_API void _klogging_d(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintDebug()) {
-		va_list args;
-		va_start(args, format);
-		kl.Print('D', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
-		va_end(args);
-	}
-}
-
-KLOGGING_API void _klogging_v(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
-	const char *file, int line, const char *function, const char *logTag,
-	const char *format, ...)
-{
-	KLogging &kl = KLogging::Instance();
-	if (kl.CanPrintVerbose()) {
-		va_list args;
-		va_start(args, format);
-		kl.Print('V', enOpts, disOpts, lineEnd, file, line, function, logTag, format, args);
+		kl.Print(enOpts, disOpts, lineEnd, type, file, line, function, logTag, format, args);
 		va_end(args);
 	}
 }
