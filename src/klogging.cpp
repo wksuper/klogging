@@ -260,7 +260,8 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 	if (options & KLOGGING_TO_LOGCAT) {
 #ifdef ANDROID
 		__android_log_vprint(ANDROID_LOG_INFO, logTag, format, args);
-		// args is changed, don't use it in below lines
+		// args could be changed, don't use it in next lines
+		// unless you're sure what you're doing
 #endif
 	}
 }
@@ -274,7 +275,7 @@ KLogging &KLogging::Instance()
 
 KLOGGING_API const char *_klogging_version()
 {
-	return "0.9";
+	return "1.0";
 }
 
 KLOGGING_API int _klogging_set(int argc, char *argv[])
