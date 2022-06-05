@@ -189,12 +189,7 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 
 	KLoggingOptions options = (m_options | enOpts) & ~disOpts;
 	if (!lineEnd) {
-		lineEnd =
-#if defined(_WIN32)
-			"\r\n";
-#else
-			"\n";
-#endif
+		lineEnd = "\n";
 	}
 
 	if (options & KLOGGING_NO_TIMESTAMP) {
