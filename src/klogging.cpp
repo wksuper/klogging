@@ -35,7 +35,6 @@
 #include <lua.hpp>
 #endif
 
-// CPP APIs
 class KLogging {
 public:
 	static KLogging &Instance();
@@ -272,10 +271,32 @@ KLogging &KLogging::Instance()
 	return s_klogging;
 }
 
-
 KLOGGING_API const char *_klogging_version()
 {
-	return "1.0";
+	if (KLOG_PATCH_VER) {
+		static char ver[
+			  3 /* 255 is 3 chars */
+			+ 1 /* dot */
+			+ 3 /* 255 is 3 chars */
+			+ 1 /* dot */
+			+ 3 /* 255 is 3 chars */
+			+ 1 /* \0 */];
+		snprintf(ver, sizeof(ver), "%u.%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER, KLOG_PATCH_VER);
+		return ver;
+	} else {
+		static char ver[
+			  3 /* 255 is 3 chars */
+			+ 1 /* dot */
+			+ 3 /* 255 is 3 chars */
+			+ 1 /* \0 */];
+		snprintf(ver, sizeof(ver), "%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER);
+		return ver;
+	}
+}
+
+KLOGGING_API int _klogging_version_compatible(uint8_t majorVer)
+{
+	return KLOG_MAJOR_VER == majorVer;
 }
 
 KLOGGING_API int _klogging_set(int argc, char *argv[])
