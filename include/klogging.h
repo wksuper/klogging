@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <assert.h>
 
 #ifndef LOG_TAG
 #define LOG_TAG NULL
@@ -133,6 +134,13 @@ static inline const char *KLOG_VERSION() { return _klogging_version(); }
 
 // Print when log level >= KLOGGING_LEVEL_VERBOSE
 #define KLOGV(...)    klogv(0, 0, NULL, __VA_ARGS__)
+
+// Always print with failure assertion
+#define KBUG(...) \
+	do { \
+		kloga(KLOGGING_FLUSH_IMMEDIATELY, KLOGGING_NO_TIMESTAMP | KLOGGING_NO_LOGTYPE | KLOGGING_NO_SOURCEFILE, NULL, "BUG: " __VA_ARGS__); \
+		assert(0); \
+	} while (0)
 
 #ifdef __cplusplus
 } // extern "C"
