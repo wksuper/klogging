@@ -39,6 +39,11 @@ class KLogging {
 public:
 	static KLogging &Instance();
 
+	const char *Version() const
+	{
+		return m_version;
+	}
+
 	int Set(int argc, char *argv[]);
 	int SetFile(const char *filename);
 	void EnableOptions(KLoggingOptions options) { m_options |= options; }
@@ -67,6 +72,13 @@ private:
 	KLogging(const KLogging &);
 	KLogging &operator=(const KLogging &);
 
+	char m_version[
+		  3 /* 255 takes 3 chars */
+		+ 1 /* dot */
+		+ 3 /* 255 takes 3 chars */
+		+ 1 /* dot */
+		+ 3 /* 255 takes 3 chars */
+		+ 1 /* \0 */];
 	FILE *m_file;
 	KLoggingOptions m_options;
 	KLoggingLevel m_level;
@@ -81,6 +93,11 @@ KLogging::KLogging()
 	, m_options(0)
 	, m_level(KLOGGING_LEVEL_OFF)
 {
+	if (KLOG_PATCH_VER) {
+		snprintf(m_version, sizeof(m_version), "%u.%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER, KLOG_PATCH_VER);
+	} else {
+		snprintf(m_version, sizeof(m_version), "%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER);
+	}
 }
 
 KLogging::~KLogging()
@@ -273,25 +290,7 @@ KLogging &KLogging::Instance()
 
 KLOGGING_API const char *_klogging_version()
 {
-	if (KLOG_PATCH_VER) {
-		static char ver[
-			  3 /* 255 is 3 chars */
-			+ 1 /* dot */
-			+ 3 /* 255 is 3 chars */
-			+ 1 /* dot */
-			+ 3 /* 255 is 3 chars */
-			+ 1 /* \0 */];
-		snprintf(ver, sizeof(ver), "%u.%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER, KLOG_PATCH_VER);
-		return ver;
-	} else {
-		static char ver[
-			  3 /* 255 is 3 chars */
-			+ 1 /* dot */
-			+ 3 /* 255 is 3 chars */
-			+ 1 /* \0 */];
-		snprintf(ver, sizeof(ver), "%u.%u", KLOG_MAJOR_VER, KLOG_MINOR_VER);
-		return ver;
-	}
+	return KLogging::Instance().Version();
 }
 
 KLOGGING_API int _klogging_version_compatible(uint8_t majorVer)
