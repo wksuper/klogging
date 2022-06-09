@@ -114,7 +114,7 @@ int KLogging::Set(int argc, char *argv[])
 				options |= strtol(arg + key_len, NULL, 10);
 			}
 
-			KLOG_ENABLE_OPTIONS(options);
+			_klogging_enable_options(options);
 		}
 
 		key = "KLOG_SET_LEVEL=";
@@ -122,14 +122,14 @@ int KLogging::Set(int argc, char *argv[])
 		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
 			enum KLoggingLevel level = (enum KLoggingLevel)atoi(arg + key_len);
 			if (level <= KLOGGING_LEVEL_VERBOSE) {
-				KLOG_SET_LEVEL(level);
+				_klogging_set_level(level);
 			}
 		}
 
 		key = "KLOG_SET_FILE=";
 		key_len = strlen(key);
 		if (arg_len > key_len && strncmp(arg, key, key_len) == 0) {
-			int rc = KLOG_SET_FILE(arg + key_len);
+			int rc = _klogging_set_file(arg + key_len);
 			if (rc != 0)
 				ret = rc;
 		}
