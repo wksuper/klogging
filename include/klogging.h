@@ -88,10 +88,10 @@ KLOGGING_API void _klogging_set_level(enum KLoggingLevel level);
 KLOGGING_API void _klogging_print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
 	char type, const char *file, int line, const char *function, const char *logTag,
 	const char *format, ...);
-#define _klogging_print_with_version_check(enOpts, disOpts, lineEnd, type, ...) \
+#define _klogging_print_with_version_check(...) \
 	do { \
 		assert(_klogging_version_compatible(KLOG_MAJOR_VER)); \
-		_klogging_print(enOpts, disOpts, lineEnd, type, __FILE__, __LINE__, __FUNCTION__, LOG_TAG, __VA_ARGS__); \
+		_klogging_print(__VA_ARGS__); \
 	} while (0)
 
 // KLOG_SET() is used in the entry of main(int argc, char *argv[]).
