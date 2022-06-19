@@ -63,7 +63,11 @@ public:
 
 	void Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
 		char type, const char *file, int line, const char *function, const char *logTag,
-		const char *format, va_list args);
+		const char *format, va_list argsA, va_list argsB, va_list argsC
+#ifdef ANDROID
+		, va_list argsD
+#endif
+		);
 
 	~KLogging();
 
@@ -176,19 +180,7 @@ static void PrintToFd(FILE *fd,
 	const char *format, va_list args)
 {
 	fprintf(fd, "%s%s%s", timestamp, logtype, separator);
-
-	// va_list could be either
-	// typedef __va_list_tag va_list[1];
-	// or
-	// typedef char * va_list;
-	va_list _args;
-	if (sizeof(_args) / sizeof(_args[0]) == 1) {
-		memcpy(&_args, args, sizeof(va_list));
-		vfprintf(fd, format, _args);
-	} else {
-		vfprintf(fd, format, args);
-	}
-
+	vfprintf(fd, format, args);
 	if (options & KLOGGING_NO_SOURCEFILE)
 		fprintf(fd, "%s", lineEnd);
 	else
@@ -199,7 +191,11 @@ static void PrintToFd(FILE *fd,
 
 void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char *lineEnd,
 	char type, const char *file, int line, const char *function, const char *logTag,
-	const char *format, va_list args)
+	const char *format, va_list argsA, va_list argsB, va_list argsC
+#ifdef ANDROID
+	, va_list argsD
+#endif
+	)
 {
 	char timestamp[32];
 	char logtype[3];
@@ -251,7 +247,7 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 				timestamp, logtype, separator,
 				file, line, function,
 				lineEnd, options,
-				format, args);
+				format, argsA);
 		}
 	}
 
@@ -261,7 +257,7 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 			timestamp, logtype, separator,
 			file, line, function,
 			lineEnd, options,
-			format, args);
+			format, argsB);
 	}
 
 	if (options & KLOGGING_TO_STDERR) {
@@ -270,14 +266,12 @@ void KLogging::Print(KLoggingOptions enOpts, KLoggingOptions disOpts, const char
 			timestamp, logtype, separator,
 			file, line, function,
 			lineEnd, options,
-			format, args);
+			format, argsC);
 	}
 
 	if (options & KLOGGING_TO_LOGCAT) {
 #ifdef ANDROID
-		__android_log_vprint(ANDROID_LOG_INFO, logTag, format, args);
-		// args could be changed, don't use it in next lines
-		// unless you're sure what you're doing
+		__android_log_vprint(ANDROID_LOG_INFO, logTag, format, argsD);
 #endif
 	}
 }
@@ -329,10 +323,21 @@ KLOGGING_API void _klogging_print(KLoggingOptions enOpts, KLoggingOptions disOpt
 {
 	KLogging &kl = KLogging::Instance();
 	if (kl.CanPrint(type)) {
-		va_list args;
-		va_start(args, format);
-		kl.Print(enOpts, disOpts, lineEnd, type, file, line, function, logTag, format, args);
-		va_end(args);
+		va_list argsA, argsB, argsC;
+		va_start(argsA, format);
+		va_start(argsB, format);
+		va_start(argsC, format);
+#ifdef ANDROID
+		va_list argsD;
+		va_start(argsD, format);
+		kl.Print(enOpts, disOpts, lineEnd, type, file, line, function, logTag, format, argsA, argsB, argsC, argsD);
+		va_end(argsD);
+#else
+		kl.Print(enOpts, disOpts, lineEnd, type, file, line, function, logTag, format, argsA, argsB, argsC);
+#endif
+		va_end(argsC);
+		va_end(argsB);
+		va_end(argsA);
 	}
 }
 
